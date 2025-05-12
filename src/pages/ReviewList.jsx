@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, message, Tag, Input, Tooltip, Image } from 'antd';
+import { Table, Button, Modal, message, Tag, Input, Tooltip, Image, Radio, Space } from 'antd';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,14 +15,17 @@ export default function ReviewList() {
   const [rejectModal, setRejectModal] = useState({ open: false, note: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, note: null });
   const [rejectReason, setRejectReason] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem('role') || '{}');
 
-  const fetchData = async () => {
+  const fetchData = async (status = '') => {
     setLoading(true);
     try {
-      const res = await api.get('/review/notes');
+      // 构建API查询参数
+      const queryParams = status && status !== 'all' ? `?status=${status}` : '';
+      const res = await api.get(`/review/notes${queryParams}`);
       setData(res);
     } catch (e) {
       message.error('获取游记失败');
@@ -31,8 +34,14 @@ export default function ReviewList() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(statusFilter);
+  }, [statusFilter]);
+
+  // 处理状态筛选变化
+  const handleStatusFilterChange = (e) => {
+    const value = e.target.value;
+    setStatusFilter(value);
+  };
 
   // 审核通过
   const handleApprove = async (note) => {
@@ -42,7 +51,7 @@ export default function ReviewList() {
         action: 'approved',
       });
       message.success('审核通过');
-      fetchData();
+      fetchData(statusFilter);
     } catch (e) {
       message.error('操作失败');
     }
@@ -60,7 +69,7 @@ export default function ReviewList() {
       message.success('已拒绝');
       setRejectModal({ open: false, note: null });
       setRejectReason('');
-      fetchData();
+      fetchData(statusFilter);
     } catch (e) {
       message.error('操作失败');
     }
@@ -78,7 +87,7 @@ export default function ReviewList() {
       });
       message.success('已删除');
       setDeleteModal({ open: false, note: null });
-      fetchData();
+      fetchData(statusFilter);
     } catch (e) {
       message.error('删除失败');
     }
@@ -191,6 +200,20 @@ export default function ReviewList() {
       )
     },
     {
+      title: '拒绝原因',
+      dataIndex: 'rejectReason',
+      key: 'rejectReason',
+      width: 150,
+      render: (reason) => {
+        if (!reason) return <span style={{ color: '#999' }}>-</span>;
+        return (
+          <Tooltip placement="topLeft" title={reason}>
+            <span style={{ color: '#ff4d4f' }}>{reason.length > 15 ? reason.slice(0, 15) + '...' : reason}</span>
+          </Tooltip>
+        );
+      }
+    },
+    {
       title: '操作',
       key: 'action',
       fixed: 'right',
@@ -232,6 +255,19 @@ export default function ReviewList() {
     <div style={{ padding: 24 }}>
       <button style={{ position: 'absolute', right: 20, top: 20, zIndex: 10 }} onClick={handleLogout}>退出登录</button>
       <h2>游记审核列表</h2>
+
+      {/* 状态筛选 */}
+      <div style={{ marginBottom: 16 }}>
+        <Space>
+          <span>状态筛选：</span>
+          <Radio.Group value={statusFilter} onChange={handleStatusFilterChange}>
+            <Radio.Button value="all">全部</Radio.Button>
+            <Radio.Button value="approved">已通过</Radio.Button>
+            <Radio.Button value="rejected">未通过</Radio.Button>
+          </Radio.Group>
+        </Space>
+      </div>
+
       <Table
         rowKey="_id"
         columns={columns}
