@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, message, Tag, Input } from 'antd';
+import { Table, Button, Modal, message, Tag, Input, Tooltip, Image } from 'antd';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
 
@@ -74,7 +74,7 @@ export default function ReviewList() {
   const handleDeleteConfirm = async () => {
     try {
       await api.delete(`/review/note/${deleteModal.note._id}`, {
-        data: { reason: '违规删除' },
+        data: { reason: '逻辑删除' },
       });
       message.success('已删除');
       setDeleteModal({ open: false, note: null });
@@ -90,35 +90,138 @@ export default function ReviewList() {
   };
 
   const columns = [
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '用户', dataIndex: 'nickname', key: 'nickname' },
     {
-      title: '图片', dataIndex: 'images', key: 'images',
+      title: '昵称',
+      dataIndex: 'nickname',
+      key: 'nickname',
+      width: 120
+    },
+    {
+      title: '标题',
+      dataIndex: 'title',
+      key: 'title',
+      width: 150,
+      ellipsis: {
+        showTitle: false
+      },
+      render: (title) => (
+        <Tooltip placement="topLeft" title={title}>
+          {title}
+        </Tooltip>
+      )
+    },
+    {
+      title: '内容',
+      dataIndex: 'content',
+      key: 'content',
+      width: 200,
+      ellipsis: {
+        showTitle: false
+      },
+      render: (content) => (
+        <Tooltip placement="topLeft" title={content}>
+          {content}
+        </Tooltip>
+      )
+    },
+    {
+      title: '图片',
+      dataIndex: 'images',
+      key: 'images',
+      width: 200,
       render: (images) => (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {images.map((img, index) => (
-            <img key={index} src={img} alt="游记图片" style={{ width: 50, height: 50 }} />
-          ))}
+        <div style={{
+          display: 'flex',
+          gap: 8,
+          maxWidth: 200,
+          overflowX: 'auto',
+          padding: '8px 0'
+        }}>
+          <Image.PreviewGroup>
+            {images.map((img, index) => (
+              <Image
+                key={index}
+                src={img}
+                alt="游记图片"
+                width={50}
+                height={50}
+                style={{
+                  objectFit: 'cover',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+                preview={{
+                  maskClassName: 'customize-mask'
+                }}
+              />
+            ))}
+          </Image.PreviewGroup>
         </div>
       )
     },
     {
-      title: '视频', dataIndex: 'video', key: 'video',
-      render: (video) => video ? <video src={video} width={100} controls /> : null
+      title: '视频',
+      dataIndex: 'video',
+      key: 'video',
+      width: 120,
+      render: (video) => {
+        if (!video) return <span style={{ color: '#999' }}>无视频</span>;
+        return (
+          <div style={{ width: 100, height: 100 }}>
+            <video
+              src={video}
+              width="100%"
+              height="100%"
+              style={{ objectFit: 'cover' }}
+              controls
+            />
+          </div>
+        );
+      }
     },
-
     {
-      title: '状态', dataIndex: 'status', key: 'status',
-      render: (v) => <Tag color={statusMap[v]?.color}>{statusMap[v]?.text}</Tag>
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (v) => (
+        <Tag color={statusMap[v]?.color}>
+          {statusMap[v]?.text}
+        </Tag>
+      )
     },
     {
-      title: '操作', key: 'action',
+      title: '操作',
+      key: 'action',
+      fixed: 'right',
+      width: 200,
       render: (_, note) => (
         <>
-          <Button size="small" onClick={() => handleApprove(note)} disabled={note.status !== 'pending'}>通过</Button>
-          <Button size="small" danger style={{ marginLeft: 8 }} onClick={() => setRejectModal({ open: true, note })} disabled={note.status !== 'pending'}>拒绝</Button>
+          <Button
+            size="small"
+            onClick={() => handleApprove(note)}
+            disabled={note.status !== 'pending'}
+          >
+            通过
+          </Button>
+          <Button
+            size="small"
+            danger
+            style={{ marginLeft: 8 }}
+            onClick={() => setRejectModal({ open: true, note })}
+            disabled={note.status !== 'pending'}
+          >
+            拒绝
+          </Button>
           {user.role === 'admin' && (
-            <Button size="small" style={{ marginLeft: 8 }} onClick={() => handleDelete(note)} danger>删除</Button>
+            <Button
+              size="small"
+              style={{ marginLeft: 8 }}
+              onClick={() => handleDelete(note)}
+              danger
+            >
+              删除
+            </Button>
           )}
         </>
       )
@@ -129,7 +232,13 @@ export default function ReviewList() {
     <div style={{ padding: 24 }}>
       <button style={{ position: 'absolute', right: 20, top: 20, zIndex: 10 }} onClick={handleLogout}>退出登录</button>
       <h2>游记审核列表</h2>
-      <Table rowKey="_id" columns={columns} dataSource={data} loading={loading} />
+      <Table
+        rowKey="_id"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        scroll={{ x: 1200 }}
+      />
 
       {/* 拒绝原因弹窗 */}
       <Modal
@@ -156,7 +265,7 @@ export default function ReviewList() {
         cancelText="取消"
         okButtonProps={{ danger: true }}
       >
-        <p>删除后无法恢复，是否确认删除该游记？</p>
+        <p>逻辑删除</p>
       </Modal>
     </div>
   );
