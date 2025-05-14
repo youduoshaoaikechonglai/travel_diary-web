@@ -262,6 +262,7 @@ export default function ReviewList() {
           <span>状态筛选：</span>
           <Radio.Group value={statusFilter} onChange={handleStatusFilterChange}>
             <Radio.Button value="all">全部</Radio.Button>
+            <Radio.Button value="pending">待审核</Radio.Button>
             <Radio.Button value="approved">已通过</Radio.Button>
             <Radio.Button value="rejected">未通过</Radio.Button>
           </Radio.Group>
